@@ -1,14 +1,15 @@
 #!/bin/bash
 
-echo "📤 Subiendo a GitHub..."
+echo "📤 Subiendo cambios..."
 git push
 
-echo "🚀 Desplegando en servidor..."
+echo "🚀 Actualizando servidor..."
 ssh -i ~/facturas_new pavlo@192.168.1.231 "
 cd ~/server/webstack &&
-git pull origin main &&
+git fetch origin &&
+git reset --hard origin/main &&
 docker-compose up -d --build
 "
 
-echo "✅ Deploy terminado"
+echo "✅ Deploy completado"
 
