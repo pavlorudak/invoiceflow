@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 import models
@@ -9,6 +10,14 @@ from auth import hash_password, verify_password, create_access_token
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="InvoiceFlow API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # tighten in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_db():
