@@ -173,18 +173,33 @@ export default function LoginPage() {
 
           {/* Password */}
           <div style={{ marginBottom: "1.5rem" }}>
-            <label
-              htmlFor="password"
-              style={{
-                display: "block",
-                fontSize: "0.8125rem",
-                fontWeight: 500,
-                color: "var(--text-secondary)",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Password
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.5rem" }}>
+              <label
+                htmlFor="password"
+                style={{
+                  display: "block",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Password
+              </label>
+              <a 
+                href="/forgot-password"
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                  transition: "opacity 0.2s"
+                }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.8")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              >
+                Forgot password?
+              </a>
+            </div>
             <div style={{ position: "relative" }}>
               <input
                 id="password"

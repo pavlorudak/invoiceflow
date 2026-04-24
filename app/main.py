@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 import models
 from database import SessionLocal, engine
-from schemas import UserCreate, LoginData
-from auth import hash_password, verify_password, create_access_token
+from schemas import UserCreate, LoginData, ForgotPasswordRequest, ResetPasswordRequest
+from auth import hash_password, verify_password, create_access_token, create_reset_token, verify_reset_token
+from email_utils import send_welcome_email, send_reset_password_email
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -34,7 +35,7 @@ def root():
 
 
 @app.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
+def register(user: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     existing = db.query(models.User).filter(models.User.email == user.email).first()
 
     if existing:
@@ -47,6 +48,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
     db.add(new_user)
     db.commit()
+
+    # Trigger welcome email in background
+    background_tasks.add_task(send_welcome_email, user.email)
 
     return {"message": "User created"}
 
@@ -64,3 +68,32 @@ def login(data: LoginData, db: Session = Depends(get_db)):
     token = create_access_token({"sub": user.email})
 
     return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        # We still return success to prevent email enumeration attacks
+        return {"message": "If that email is in our database, we have sent a reset link"}
+    
+    reset_token = create_reset_token(user.email)
+    background_tasks.add_task(send_reset_password_email, user.email, reset_token)
+    
+    return {"message": "If that email is in our database, we have sent a reset link"}
+
+
+@app.post("/reset-password")
+def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = verify_reset_token(req.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.password = hash_password(req.new_password)
+    db.commit()
+    
+    return {"message": "Password updated successfully"}
